@@ -6,7 +6,15 @@
 html,body{margin:0;height:100%;background:#14121c;color:#fff;font-family:system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{display:block}
 #t{position:fixed;top:12px;left:0;right:0;text-align:center;font-size:14px;opacity:.85;pointer-events:none}
-#l{position:fixed;inset:0;display:grid;place-items:center;background:#14121c;font-size:18px;z-index:20}
+#l{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,#2a1450,#07060b 70%);z-index:20;transition:opacity .5s}
+#l.done{opacity:0;pointer-events:none}
+.lw{width:min(420px,86vw);text-align:center}
+.lt{font-size:28px;font-weight:700;letter-spacing:.04em;margin-bottom:22px}
+.lb{height:10px;border-radius:6px;background:#ffffff1f;overflow:hidden}
+#lbar{height:100%;width:0;background:linear-gradient(90deg,#ff4d8d,#8a6bff);transition:width .25s}
+#lp{margin-top:10px;font-size:15px;font-variant-numeric:tabular-nums}
+#lm{opacity:.75;margin-top:6px;font-size:13px;min-height:18px}
+.ls{opacity:.5;margin-top:22px;font-size:12px;line-height:1.5}
 .tag{position:fixed;transform:translate(-50%,-100%);padding:6px 12px;border-radius:20px;background:#ff4d8dcc;font-size:13px;pointer-events:none;white-space:nowrap}
 :root{--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px)}
 #back,#mbtn,#vbtn,#fsbtn{position:static;background:#000a;border:1px solid #fff4;color:#fff;border-radius:10px;padding:8px 14px;font-size:14px;cursor:pointer;z-index:5;display:none}
@@ -35,7 +43,7 @@ canvas{display:block}
 @media (pointer:coarse){#menu button{padding:11px 13px;font-size:14px}}
 @media (max-height:520px){#menu{width:min(300px,50vw)}#mbody h4{margin:10px 0 4px}#back,#mbtn,#vbtn,#fsbtn{padding:6px 10px;font-size:12px}.abtn{padding:8px 10px;font-size:12px;min-width:76px}#prompt{bottom:calc(14px + var(--sb))}}
 </style></head><body>
-<div id="l">Yuklanmoqda...</div>
+<div id="l"><div class="lw"><div class="lt">3D Dunyo</div><div class="lb"><div id="lbar"></div></div><div id="lp">0%</div><div id="lm">Boshlanmoqda...</div><div class="ls">Birinchi marta yuklash 1–2 daqiqa olishi mumkin.<br>Hammasi bir marta yuklanadi, keyingi safar bir zumda ochiladi va o'yin paytida qotmaydi.</div></div></div>
 <div id="t">Personaj ustiga bosing: o'yin boshlanadi · aylantirish: sichqoncha/barmoq</div>
 <button id="back">← Orqaga</button><div id="topr"><button id="fsbtn" style="display:none">Butun ekran</button><button id="vbtn">Kamera: 3-shaxs</button><button id="mbtn">Animatsiyalar</button></div>
 <div id="menu"><div class="mh"><b>Animatsiyalar</b><button id="mres">Davom etish</button><button id="mexit">Chiqish</button></div><div id="mbody"></div></div>
@@ -49,11 +57,24 @@ canvas{display:block}
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 if(location.protocol==='file:'){document.getElementById('l').innerHTML='<div style="text-align:center;padding:24px;max-width:520px;line-height:1.6">Bu sahifa serverda ishlaydi.<br>Papkada ushbu buyruqni ishga tushiring:<br><code>python -m http.server 8000</code><br>so\'ng <b>http://localhost:8000</b> ni oching.</div>';throw new Error('file protocol')}
-const ASSET={"girl": {"fbx": "assets/girl.fbx", "tex": {"body_color": "assets/girl/body_color.jpg", "body_normal": "assets/girl/body_normal.jpg", "head_color": "assets/girl/head_color.jpg", "head_normal": "assets/girl/head_normal.jpg", "opacity_color": "assets/girl/opacity_color.png"}}, "boy": {"fbx": "assets/boy.fbx", "tex": {"body_color": "assets/boy/body_color.jpg", "body_normal": "assets/boy/body_normal.jpg", "head_color": "assets/boy/head_color.jpg", "head_normal": "assets/boy/head_normal.jpg", "opacity_color": "assets/boy/opacity_color.png"}}};
-const fetchJSON=u=>fetch(u).then(r=>{if(!r.ok)throw new Error(u+' '+r.status);return r.json()});
-const fetchBuf=u=>fetch(u).then(r=>{if(!r.ok)throw new Error(u+' '+r.status);return r.arrayBuffer()});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+const ASSET={"girl": {"fbx": "assets/girl.fbx", "tex": {"body_color": "assets/girl/body_color.jpg", "head_color": "assets/girl/head_color.jpg", "body_normal": "assets/girl/body_normal.jpg", "head_normal": "assets/girl/head_normal.jpg", "opacity_color": "assets/girl/opacity_color.webp"}}, "boy": {"fbx": "assets/boy.fbx", "tex": {"body_color": "assets/boy/body_color.jpg", "head_color": "assets/boy/head_color.jpg", "body_normal": "assets/boy/body_normal.jpg", "head_normal": "assets/boy/head_normal.jpg", "opacity_color": "assets/boy/opacity_color.webp"}}};
+const FILES=await fetch('assets/manifest.json').then(r=>r.json());
+let bytesDone=0;const bytesTotal=FILES.total||1;
+const gid=id=>document.getElementById(id);
+function setProg(msg,force){const f=force!=null?force:Math.min(.88,bytesDone/bytesTotal*.88);gid('lbar').style.width=(f*100)+'%';gid('lp').textContent=Math.round(f*100)+'%';if(msg)gid('lm').textContent=msg}
+async function getBuf(url){const r=await fetch(url);if(!r.ok)throw new Error(url+' '+r.status);const rd=r.body.getReader(),chunks=[];let got=0;
+ for(;;){const {done,value}=await rd.read();if(done)break;chunks.push(value);got+=value.length;bytesDone+=value.length;setProg()}
+ const out=new Uint8Array(got);let o=0;for(const c of chunks){out.set(c,o);o+=c.length}return out.buffer}
+const getJSON=async u=>JSON.parse(new TextDecoder().decode(await getBuf(u)));
+const fetchBuf=getBuf,fetchJSON=getJSON;
+async function pool(fns,n){let i=0;await Promise.all(Array.from({length:n},async()=>{while(i<fns.length){const f=fns[i++];await f()}}))}
+setProg('Ma\'lumotlar...');if(new URLSearchParams(location.hash.slice(1)).get('t')==='loader'){setProg('Animatsiyalar...',.63);await new Promise(()=>{})}
 const MAN=await fetchJSON('assets/anim/index.json');
+const ANIM={},TEX={};
 const FACE=0;
 const TP=new URLSearchParams(location.hash.slice(1)); // sinov uchun: #t=hug&cam=x,y,z,tx,ty,tz
 const b64=s=>{const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer};
@@ -62,12 +83,13 @@ const $=id=>document.getElementById(id);
 const HINT='W A S D: yurish · Shift: yugurish · Space: sakrash · G: raqs · H: quchoqlash · K: o\'pish · E: o\'tirish · L: chiroq · V: kamera · Esc: menyu';
 const cl=(x,a,b)=>Math.min(b,Math.max(a,x));
 const ease=x=>x*x*(3-2*x);
-const r=new THREE.WebGLRenderer({antialias:!touch});let pr=touch?Math.min(devicePixelRatio,1.5):Math.min(devicePixelRatio,2);const prMax=pr;r.setPixelRatio(pr);r.setSize(innerWidth,innerHeight);
-r.shadowMap.enabled=true;r.toneMapping=THREE.ACESFilmicToneMapping;r.outputColorSpace=THREE.SRGBColorSpace;document.body.prepend(r.domElement);
-const s=new THREE.Scene();
+const r=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});let pr=Math.min(devicePixelRatio,2);const prMax=pr;r.setPixelRatio(pr);const MAXA=Math.min(16,r.capabilities.getMaxAnisotropy());r.setSize(innerWidth,innerHeight);
+r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;r.toneMapping=THREE.ACESFilmicToneMapping;r.outputColorSpace=THREE.SRGBColorSpace;document.body.prepend(r.domElement);
+const s=new THREE.Scene();const ENVM=[];
+{const pm=new THREE.PMREMGenerator(r);s.environment=pm.fromScene(new RoomEnvironment(),.04).texture;pm.dispose()}
 const cam=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.05,150);cam.position.set(0,1.75,-2.4);
 const oc=new OrbitControls(cam,r.domElement);oc.target.set(0,1.0,-5.5);oc.enableDamping=true;oc.maxPolarAngle=Math.PI*.52;oc.minDistance=.8;oc.maxDistance=8;
-const sun=new THREE.DirectionalLight(0xfff0e0,1);sun.position.set(2,12,3);sun.castShadow=true;sun.shadow.mapSize.set(touch?1024:2048,touch?1024:2048);
+const sun=new THREE.DirectionalLight(0xfff0e0,1);sun.position.set(2,12,3);sun.castShadow=true;sun.shadow.mapSize.set(touch?1536:2048,touch?1536:2048);sun.shadow.radius=3;sun.shadow.bias=-.0004;
 Object.assign(sun.shadow.camera,{left:-9,right:9,top:9,bottom:-9,near:1,far:40});s.add(sun);s.add(sun.target);
 // ---------- KINOTEATR ZALI ----------
 const HW=7.4,ZF=-10.4,ZB=6.9,HH=8.6,SCR_Z=-9.7,ROWS=7,ROW_Z0=-2.6,ROW_D=1.15,STEP=.22;
@@ -84,7 +106,7 @@ const wallT=ctex(256,256,(g,w,h)=>{g.fillStyle='#1c1725';g.fillRect(0,0,w,h);for
 const woodT=ctex(256,256,(g,w,h)=>{g.fillStyle='#6b4426';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=32){g.fillStyle=y%64?'#74492a':'#613d22';g.fillRect(0,y,w,30);g.fillStyle='#3d2614';g.fillRect(0,y+30,w,2)}});
 const ceilT=ctex(128,128,(g,w,h)=>{g.fillStyle='#0e0c13';g.fillRect(0,0,w,h);g.fillStyle='#14111b';for(let i=0;i<200;i++)g.fillRect(Math.random()*w,Math.random()*h,2,2)});
 const signT=ctex(256,96,(g,w,h)=>{g.fillStyle='#04230f';g.fillRect(0,0,w,h);g.fillStyle='#38ff82';g.font='bold 54px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText('CHIQISH',w/2,h/2+2)});
-const M=(o)=>new THREE.MeshStandardMaterial(o);
+const M=(o)=>{const m=new THREE.MeshStandardMaterial(o);ENVM.push(m);return m};
 const mCeilL=new THREE.MeshBasicMaterial({color:0xffe9c4}),mCove=new THREE.MeshBasicMaterial({color:0x7b52ff}),mSconce=new THREE.MeshBasicMaterial({color:0xffb87a}),mRiser=new THREE.MeshBasicMaterial({color:0xff9b3d});
 const mVelvet=M({color:0x7d0f20,roughness:1}),mGold=M({color:0xc9a24a,roughness:.4,metalness:.4}),mBlack=new THREE.MeshBasicMaterial({color:0x000000});
 const add=(m,x,y,z)=>{m.position.set(x,y,z);s.add(m);return m};
@@ -150,7 +172,7 @@ const glow=[-1,1].map(sg=>{const l=new THREE.PointLight(0xffffff,0,28,1.2);l.pos
 let dimT=0,dim=0,glowAvg=new THREE.Color(.5,.5,.6),glowT=0;
 const glowC=document.createElement('canvas');glowC.width=16;glowC.height=9;const glowG=glowC.getContext('2d',{willReadFrequently:true});
 function updateHall(dt,t){dim+=(dimT-dim)*(1-Math.exp(-2.5*dt));const lv=1-dim;
- hemi.intensity=.1+.8*lv;sun.intensity=.1+.9*lv;for(const l of sconces)l.intensity=l.userData.b*(.12+.88*lv);
+ hemi.intensity=.1+.8*lv;for(const m of ENVM)m.envMapIntensity=.04+.3*lv;sun.intensity=.1+.9*lv;for(const l of sconces)l.intensity=l.userData.b*(.12+.88*lv);
  mCeilL.color.setRGB(1,.91,.77).multiplyScalar(.1+.9*lv);mSconce.color.setRGB(1,.72,.48).multiplyScalar(.2+.8*lv);mCove.color.setRGB(.48,.32,1).multiplyScalar(.25+.75*lv);
  beamMat.uniforms.o.value=.05+.2*dim*(vsrc?1:.5);
  glowT-=dt;if(glowT<=0){glowT=.12;
@@ -172,7 +194,7 @@ let noteT=0;function note(m){const e=$('prompt');e.textContent=m;e.style.display
 
 // ---------- animatsiyalarni ochish ----------
 async function gunzip(b){const u=Uint8Array.from(atob(b),c=>c.charCodeAt(0));return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()}
-async function makeClip(key){const a=await fetchJSON('assets/anim/'+key+'.json'),i16=new Int16Array(await gunzip(a.data)),N=a.n,nq=a.names.length;
+async function makeClip(key){const a=ANIM[key]||await fetchJSON('assets/anim/'+key+'.json'),i16=new Int16Array(await gunzip(a.data)),N=a.n,nq=a.names.length;
  for(let j=0;j<nq;j++){const b=j*N*4;for(let i=1;i<N;i++)for(let c=0;c<4;c++)i16[b+i*4+c]=i16[b+i*4+c]+i16[b+(i-1)*4+c]}
  {const b=nq*N*4;for(let i=1;i<N;i++)for(let c=0;c<3;c++)i16[b+i*3+c]=i16[b+i*3+c]+i16[b+(i-1)*3+c]}
  const times=new Float32Array(N);for(let i=0;i<N;i++)times[i]=Math.min(i/20,a.dur);
@@ -193,12 +215,17 @@ const LOOPS=/^(dancing_|idle_|crouch_idle|cell_phone|sit_)/;
 function label(k){let t=k;for(const [re,l] of LBL)if(re.test(k)){t=l;break}const n=k.match(/_0?(\d)$/);return t+(n&&!/dancing|shrug|thoughtful|crouch|cell/.test(k)?' '+n[1]:'')}
 // ---------- personajlar ----------
 const tl=new THREE.TextureLoader(),fb=new FBXLoader();
-const tx=(u,srgb)=>{const t=tl.load(u);if(srgb)t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t};
-const chars={};
-async function build(p,label,x,z,ry,height,gp){$('l').textContent='Yuklanmoqda: '+label+'...';const hairMats=[];const o=fb.parse(await fetchBuf(ASSET[p].fbx),'');
+const tx=(u,srgb)=>{const t=TEX[u];if(srgb)t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=MAXA;return t};
+async function loadTex(url){const buf=await getBuf(url);const u=URL.createObjectURL(new Blob([buf]));TEX[url]=await new Promise((res,rej)=>tl.load(u,res,undefined,rej))}
+setProg('Teksturalar...');
+await Promise.all(Object.values(ASSET).flatMap(a=>Object.values(a.tex)).map(loadTex));
+setProg('Animatsiyalar...');
+await pool(MAN.map(k=>()=>getJSON('assets/anim/'+k+'.json').then(j=>{ANIM[k]=j})),6);
+const chars={};let CH=[];
+async function build(p,label,x,z,ry,height,gp){setProg('Personaj: '+label+'...');const hairMats=[];const o=fb.parse(await fetchBuf(ASSET[p].fbx),'');
  o.traverse(c=>{if(!c.isMesh)return;c.castShadow=true;c.frustumCulled=false;
   const f=m=>{const n=(m.name||'').toLowerCase(),T=ASSET[p].tex,k=n.includes('opacity')?'opacity':n.includes('head')?'head':'body';
-   const nm=new THREE.MeshStandardMaterial({map:tx(T[k+'_color'],true),roughness:.65,metalness:0});
+   const nm=new THREE.MeshStandardMaterial({map:tx(T[k+'_color'],true),roughness:.65,metalness:0});ENVM.push(nm);
    if(T[k+'_normal'])nm.normalMap=tx(T[k+'_normal'],false);
    if(k==='opacity'){nm.transparent=true;nm.alphaTest=.4;nm.side=THREE.DoubleSide;hairMats.push(nm)}return nm};
   c.material=Array.isArray(c.material)?c.material.map(f):f(c.material)});
@@ -212,15 +239,20 @@ async function build(p,label,x,z,ry,height,gp){$('l').textContent='Yuklanmoqda: 
  const hit=new THREE.Mesh(new THREE.BoxGeometry(.9,1.8,.7),new THREE.MeshBasicMaterial({visible:false}));hit.position.y=.9;hit.userData.key=p;root.add(hit);
  const tag=document.createElement('div');tag.className='tag';tag.textContent=label+': bosing';document.body.append(tag);
  chars[p]={key:p,hairMats,lipBase,root,o,mixer,act,hit,tag,spd,bones,gp,height,home:{x,z,ry},w:{idle:1,walk:0,run:0},vx:0,vz:0,vy:0,y:0,co:0,sm:0,label,clips:{},emote:null,et:0,ew:0,target:null}}
-await build('girl','Qiz',-.6,-5.5,.3,1.70,'f');await build('boy','Yigit',.6,-5.5,-.3,1.77,'m');
-for(const c of Object.values(chars)){
+await build('girl','Qiz',-.6,-5.5,.3,1.70,'f');await build('boy','Yigit',.6,-5.5,-.3,1.77,'m');CH=Object.values(chars);
+for(const c of CH){
  for(const k of ['idle','walk','run']){const clip=await makeClip(c.gp+'_loco_'+k);
   if(k!=='idle')c.spd[k]=Math.abs(clip.userData.drift[2])*c.o.scale.x/clip.duration;
   const a=c.mixer.clipAction(clip);a.play();a.setEffectiveWeight(k==='idle'?1:1e-4);c.act[k]=a}
  c.spd.walk=c.spd.walk||1.4;c.spd.run=c.spd.run||3.4;
  c.clipKeys=MAN.filter(k=>k.startsWith(c.gp+'_')&&!k.includes('_loco_')).map(k=>k.slice(2));
- await loadClip(c,'sit_chair_idle_neutral_01')}
-$('l').remove();
+ setProg('Animatsiyalar tayyorlanmoqda: '+c.label+'...');
+ for(const k of c.clipKeys){const cl2=await loadClip(c,k);c.mixer.clipAction(cl2)}}
+setProg('Grafika tayyorlanmoqda...',.9);
+for(const tx2 of Object.values(TEX))r.initTexture(tx2);
+try{if(r.compileAsync)await r.compileAsync(s,cam);else r.compile(s,cam)}catch(e){}
+for(let i=0;i<4;i++){r.render(s,cam);await new Promise(rs=>requestAnimationFrame(rs))}
+setProg('Tayyor',1);window.__loaded=true;gid('l').classList.add('done');setTimeout(()=>gid('l').remove(),600);
 // ---------- menyu ----------
 const mb=$('mbody');
 function sec(t){const h=document.createElement('h4');h.textContent=t;mb.append(h)}
@@ -237,10 +269,10 @@ function emoteStop(c){if(c.emote)c.et=0}
 function emoteKill(c){if(c.emote){c.emote.a.stop();c.emote=null}c.et=0;c.ew=0}
 // ---------- holat ----------
 let mode='select',cur=null,yaw=0,pitch=.25,camDist=3.6,fps=false,PMIN=-.4,PMAX=1.1;const keys={},mv={x:0,z:0};let sprint=false,wantJump=false;
-const other=()=>Object.values(chars).find(c=>c!==cur);
+const other=()=>CH.find(c=>c!==cur);
 const ray=new THREE.Raycaster(),m2=new THREE.Vector2();
 function pick(ev){m2.set(ev.clientX/innerWidth*2-1,-(ev.clientY/innerHeight)*2+1);ray.setFromCamera(m2,cam);
- const h=ray.intersectObjects(Object.values(chars).map(c=>c.hit),false)[0];return h&&h.object.userData.key}
+ const h=ray.intersectObjects(CH.map(c=>c.hit),false)[0];return h&&h.object.userData.key}
 let down=null;
 r.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});
 r.domElement.addEventListener('pointerup',e=>{if(mode!=='select'||!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved<6){const k=pick(e);if(k)start(k)}});
@@ -255,14 +287,14 @@ $('fsbtn').onclick=async()=>{try{if(!document.fullscreenElement){await document.
 document.addEventListener('fullscreenchange',()=>{$('fsbtn').textContent=document.fullscreenElement?'Oynali rejim':'Butun ekran'});
 function start(k){cur=chars[k];mode='game';oc.enabled=false;
  yaw=cur.root.rotation.y+Math.PI;pitch=.25;
- for(const c of Object.values(chars))c.tag.style.display='none';
+ for(const c of CH)c.tag.style.display='none';
  $('t').style.display='none';$('back').style.display='block';$('mbtn').style.display='block';$('vbtn').style.display='block';$('cross').style.display='block';
  $('hint').textContent=touch?'':HINT;
  if(touch){setTouchHUD(true)}else if(!TP.has('t'))r.domElement.requestPointerLock?.();chkRot()}
 function stop(){mode='select';cur=null;oc.enabled=true;document.exitPointerLock?.();pairReset();
- for(const c of Object.values(chars)){if(c.sit){c.sit.st.taken=null;c.sit=null}emoteKill(c);c.root.position.set(c.home.x,0,c.home.z);c.root.rotation.y=c.home.ry;c.tag.style.display='block';c.vx=c.vz=c.vy=c.y=c.sm=0;c.target=null}
+ for(const c of CH){if(c.sit){c.sit.st.taken=null;c.sit=null}emoteKill(c);c.root.position.set(c.home.x,0,c.home.z);c.root.rotation.y=c.home.ry;c.tag.style.display='block';c.vx=c.vz=c.vy=c.y=c.sm=0;c.target=null}
  cam.fov=50;cam.updateProjectionMatrix();$('menu').style.display='none';
- cam.position.set(0,1.75,-2.4);oc.target.set(0,1.0,-5.5);$('t').style.display='block';$('back').style.display='none';$('mbtn').style.display='none';$('vbtn').style.display='none';for(const c of Object.values(chars))for(const m of c.hairMats)m.visible=true;$('cross').style.display='none';$('hint').textContent='';
+ cam.position.set(0,1.75,-2.4);oc.target.set(0,1.0,-5.5);$('t').style.display='block';$('back').style.display='none';$('mbtn').style.display='none';$('vbtn').style.display='none';for(const c of CH)for(const m of c.hairMats)m.visible=true;$('cross').style.display='none';$('hint').textContent='';
  setTouchHUD(false);chkRot();$('jb').style.display='none';mv.x=mv.z=0}
 $('back').onclick=stop;
 let danceI=0;
@@ -299,7 +331,7 @@ const tgt=new THREE.Vector3(),tmp=new THREE.Vector3(),v=new THREE.Vector3();
 function collide(p,self,skipPartner,noCols){
  if(!noCols)for(const c of cols){if(p.y>c.h)continue;const dx=p.x-c.x,dz=p.z-c.z,d=Math.hypot(dx,dz),m=c.r+PR;if(d<m&&d>1e-4){p.x=c.x+dx/d*m;p.z=c.z+dz/d*m}}
  if(skipPartner)return;
- for(const o of Object.values(chars)){if(o===self)continue;const q=o.root.position,dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz),m=PR*2;if(d<m&&d>1e-4){p.x=q.x+dx/d*m;p.z=q.z+dz/d*m}}}
+ for(const o of CH){if(o===self)continue;const q=o.root.position,dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz),m=PR*2;if(d<m&&d>1e-4){p.x=q.x+dx/d*m;p.z=q.z+dz/d*m}}}
 function setW(c,wi,ww,wr,dt){const f=1-Math.exp(-12*dt),t={idle:wi,walk:ww,run:wr},k=1-c.ew;for(const n in t){c.w[n]+=(t[n]-c.w[n])*f;c.act[n].setEffectiveWeight(Math.max(c.w[n]*k,1e-4))}}
 function turnTo(c,ang,dt,rate=TURN){let d=ang-c.root.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));c.root.rotation.y+=d*Math.min(1,dt*rate)}
 function stepChar(c,tx,tz,run,dt,o){
@@ -331,7 +363,7 @@ function stepChar(c,tx,tz,run,dt,o){
 // ---------- quchoqlash / o'pish ----------
 const pair={on:false,kind:null,phase:'off',w:0,kw:0,A:null,B:null};
 const UP=new THREE.Vector3(0,1,0);
-function pairReset(){pair.on=false;pair.phase='off';pair.w=pair.kw=0;for(const c of Object.values(chars))c.target=null}
+function pairReset(){pair.on=false;pair.phase='off';pair.w=pair.kw=0;for(const c of CH)c.target=null}
 function faceAng(a,b){return Math.atan2(b.root.position.x-a.root.position.x,b.root.position.z-a.root.position.z)}
 function pairToggle(kind){
  if(!cur||cur.sit)return;
@@ -401,9 +433,9 @@ function updatePrompt(dt){const e=$('prompt');
 const clock=new THREE.Clock(),eyeA=new THREE.Vector3(),eyeB=new THREE.Vector3();const qH=new THREE.Quaternion(),fwdV=new THREE.Vector3(),upV=new THREE.Vector3(),UPW=new THREE.Vector3(0,1,0);let jumpBuf=0,fov=50,tClock=0;
 let fpsT=0,fpsN=0;
 function frame(dtO,skip){const dt=dtO||Math.min(clock.getDelta(),.05);
- if(!dtO&&!TP.has('t')){fpsT+=dt;fpsN++;if(fpsT>2){const avg=fpsT/fpsN;fpsT=fpsN=0;let np=pr;if(avg>1/28&&pr>.7)np=Math.max(.7,pr-.15);else if(avg<1/55&&pr<prMax)np=Math.min(prMax,pr+.1);if(np!==pr){pr=np;r.setPixelRatio(pr);r.setSize(innerWidth,innerHeight)}}}
+ if(!dtO&&!TP.has('t')){fpsT+=dt;fpsN++;if(fpsT>2){const avg=fpsT/fpsN;fpsT=fpsN=0;let np=pr;if(avg>1/28&&pr>.85)np=Math.max(.85,pr-.15);else if(avg<1/55&&pr<prMax)np=Math.min(prMax,pr+.1);if(np!==pr){pr=np;r.setPixelRatio(pr);r.setSize(innerWidth,innerHeight)}}}
  jumpBuf=Math.max(0,jumpBuf-dt);if(wantJump){jumpBuf=.14;wantJump=false}
- tClock+=dt;updateHall(dt,tClock);for(const c of Object.values(chars))restoreSnap(c);
+ tClock+=dt;updateHall(dt,tClock);for(const c of CH)restoreSnap(c);
  let ix=mv.x,iz=mv.z;if(keys.KeyW||keys.ArrowUp)iz+=1;if(keys.KeyS||keys.ArrowDown)iz-=1;if(keys.KeyD||keys.ArrowRight)ix+=1;if(keys.KeyA||keys.ArrowLeft)ix-=1;
  const len=Math.hypot(ix,iz),mag=Math.min(len,1);if(len>1){ix/=len;iz/=len}
  const run=sprint||keys.ShiftLeft||keys.ShiftRight||mag>.93;
@@ -412,8 +444,8 @@ function frame(dtO,skip){const dt=dtO||Math.min(clock.getDelta(),.05);
   if(pair.phase==='approach'){const done=[pair.A,pair.B].every(c=>Math.hypot(c.target.x-c.root.position.x,c.target.z-c.root.position.z)<.05);if(done)pair.phase='hold'}
   if(pair.phase==='hold'){pair.w=Math.min(1,pair.w+dt/.9);if(pair.kind==='kiss'&&pair.w>.95)pair.kw=Math.min(1,pair.kw+dt/1.1);
    if(mag>.4||jumpBuf>0){pair.phase='release'}}
-  if(pair.phase==='release'){pair.kw=Math.max(0,pair.kw-dt/.5);pair.w=Math.max(0,pair.w-dt/.7);if(pair.w<=0){pair.on=false;for(const c of Object.values(chars))c.target=null;pair.phase='off'}}}
- for(const c of Object.values(chars)){
+  if(pair.phase==='release'){pair.kw=Math.max(0,pair.kw-dt/.5);pair.w=Math.max(0,pair.w-dt/.7);if(pair.w<=0){pair.on=false;for(const c of CH)c.target=null;pair.phase='off'}}}
+ for(const c of CH){
   let tx=0,tz=0,o={jump:false,skip:pair.on||!!c.sit,noCols:!!c.sit};
   if(c.sit){const st=c.sit.st;
    if(c===cur&&(mag>.4||jumpBuf>0)){standUp(c);jumpBuf=0}
@@ -472,7 +504,7 @@ function frame(dtO,skip){const dt=dtO||Math.min(clock.getDelta(),.05);
   a.Bip01_Head.getWorldQuaternion(qH);const AX=(x,y,z)=>F(new THREE.Vector3(x,y,z).applyQuaternion(qH));window.__dbg='X '+AX(1,0,0)+' Y '+AX(0,1,0)+' Z '+AX(0,0,1);
   e.textContent=['lipGap '+f.distanceTo(m).toFixed(3),'lipF '+F(f),'lipM '+F(m),'headF '+F(P(a.Bip01_Head)),'headM '+F(P(b.Bip01_Head)),'rootF '+F(chars.girl.root.position)+' rootM '+F(chars.boy.root.position),'ERR '+(window.__err||'-'),'DBG '+(window.__dbg||'-')].join(String.fromCharCode(10))}
  if(!skip)r.render(s,cam)}
-r.setAnimationLoop(()=>frame());
+r.setAnimationLoop(()=>frame());dispatchEvent(new Event('resize'));
 window.__g={chars,pair,pairSnap,emoteStart,start,THREE};
 // sinov rejimi (skrinshot uchun)
 if(TP.has('t')){const t=TP.get('t');start(TP.get('cur')||'girl');mode='test';
@@ -481,5 +513,5 @@ if(TP.has('t')){const t=TP.get('t');start(TP.get('cur')||'girl');mode='test';
  else if(t==='flowhug')pairToggle('hug');else if(t==='flowkiss')pairToggle('kiss');else if(t.startsWith('dance')){await Promise.all([loadClip(chars.girl,TP.get('e')||'dancing_cool'),loadClip(chars.boy,TP.get('e2')||TP.get('e')||'dancing_cool')]);emoteStart(chars.girl,TP.get('e')||'dancing_cool');emoteStart(chars.boy,TP.get('e2')||TP.get('e')||'dancing_cool')}
  if(TP.has('cam'))window.TESTCAM=TP.get('cam').split(',').map(Number);if(TP.has('fov'))window.TESTFOV=+TP.get('fov');
  if(TP.has('menu')){buildMenu();$('menu').style.display='flex'}
- if(TP.has('dim')&&t!=='sit')dimT=1;if(TP.has('fps')){setFps(true);mode='game'}if(TP.has('pitch'))pitch=+TP.get('pitch');window.__metric=!TP.has('nm');const T=+TP.get('sim')||0;for(let i=0;i<T*30;i++)frame(1/30,true)}
+ if(TP.has('dim')&&t!=='sit')dimT=1;if(TP.has('fps')){setFps(true);mode='game'}if(TP.has('pitch'))pitch=+TP.get('pitch');window.__metric=!TP.has('nm');const T=+TP.get('sim')||0;for(let i=0;i<T*30;i++)frame(1/30,true);window.__testReady=true}
 </script></body></html>
