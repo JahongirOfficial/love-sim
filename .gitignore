@@ -1,0 +1,7 @@
+# faqat web/, tools/, litsenziyalar va README repoga tushadi
+/*
+!/.gitignore
+!/README.md
+!/web/
+!/tools/
+!/THIRD_PARTY_LICENSES/
