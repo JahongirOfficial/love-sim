@@ -18,6 +18,9 @@ so'ng http://localhost:8000 ni oching (fayl sifatida ochib bo'lmaydi, server ker
 | O'tirish, raqs, chiroq | E, G, L | tugmalar |
 | Kamera (yuzdan / 3-shaxs) | V | "Kamera" |
 | Menyu (animatsiyalar, ekran ulashish) | Esc | "Animatsiyalar" |
+| Karavotga yotish | E (karavot yonida) | "O'tir" |
+| Chat | Enter | "Chat" |
+| Ovoz (onlayn) | M | "Ovoz" |
 
 ## Tuzilma
 - `web/` sayt (Vercel'ga shu papka joylanadi). `index.html` o'yin kodi, `assets/` model, tekstura va animatsiyalar.
@@ -26,8 +29,12 @@ so'ng http://localhost:8000 ni oching (fayl sifatida ochib bo'lmaydi, server ker
 ## Joylash (Vercel)
 Vercel'da Root Directory = `web`. `main` ga push qilinsa sayt o'zi yangilanadi.
 
-## Rejalar
-Onlayn rejim: xona kodi, ikki uzoq foydalanuvchi, PC ekranini WebRTC orqali uzatish.
+## Imkoniyatlar
+- **Kinoteatr zali**, o'rindiqlar, ekran (PC ekranini ulashish yoki film fayli), chiroqlar.
+- **Yo'lak, yotoqxona, hammom**: zalning chap CHIQISH eshigi orqali. Karavotda yotish, quchoqlash va o'pish (jonli harakat bilan), hammomda oyna.
+- **Onlayn (2 kishi, WebRTC/PeerJS)**: xona kodi, real vaqtda harakat, ovozli aloqa, ekran ulashish (1280x720), sinxron film.
+- **Chat**: Enter (telefonda "Chat"). Oxirgi gap personaj boshi tepasida xayol pufagi bo'lib ko'rinadi. Kiss/quchoq taklifi ham chat orqali.
+- Telefon uchun yengil profil (1K teksturalar, kam yorug'lik, moslashuvchan aniqlik).
 
 ## Manbalar
 Personajlar va animatsiyalar: [Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox) (MIT).
