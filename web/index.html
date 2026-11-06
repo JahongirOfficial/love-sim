@@ -61,9 +61,9 @@ import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 if(location.protocol==='file:'){document.getElementById('l').innerHTML='<div style="text-align:center;padding:24px;max-width:520px;line-height:1.6">Bu sahifa serverda ishlaydi.<br>Papkada ushbu buyruqni ishga tushiring:<br><code>python -m http.server 8000</code><br>so\'ng <b>http://localhost:8000</b> ni oching.</div>';throw new Error('file protocol')}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-const ASSET={"girl": {"fbx": "assets/girl.fbx", "tex": {"body_color": "assets/girl/body_color.jpg", "head_color": "assets/girl/head_color.jpg", "body_normal": "assets/girl/body_normal.jpg", "head_normal": "assets/girl/head_normal.jpg", "opacity_color": "assets/girl/opacity_color.webp"}}, "boy": {"fbx": "assets/boy.fbx", "tex": {"body_color": "assets/boy/body_color.jpg", "head_color": "assets/boy/head_color.jpg", "body_normal": "assets/boy/body_normal.jpg", "head_normal": "assets/boy/head_normal.jpg", "opacity_color": "assets/boy/opacity_color.webp"}}};
+const ASSET={"girl": {"fbx": "assets/girl.fbx", "tex": {"body_color": "assets/girl/hi/body_color.jpg", "head_color": "assets/girl/hi/head_color.jpg", "body_normal": "assets/girl/hi/body_normal.jpg", "head_normal": "assets/girl/hi/head_normal.jpg", "opacity_color": "assets/girl/hi/opacity_color.webp"}, "texLo": {"body_color": "assets/girl/lo/body_color.jpg", "head_color": "assets/girl/lo/head_color.jpg", "body_normal": "assets/girl/lo/body_normal.jpg", "head_normal": "assets/girl/lo/head_normal.jpg", "opacity_color": "assets/girl/lo/opacity_color.webp"}}, "boy": {"fbx": "assets/boy.fbx", "tex": {"body_color": "assets/boy/hi/body_color.jpg", "head_color": "assets/boy/hi/head_color.jpg", "body_normal": "assets/boy/hi/body_normal.jpg", "head_normal": "assets/boy/hi/head_normal.jpg", "opacity_color": "assets/boy/hi/opacity_color.webp"}, "texLo": {"body_color": "assets/boy/lo/body_color.jpg", "head_color": "assets/boy/lo/head_color.jpg", "body_normal": "assets/boy/lo/body_normal.jpg", "head_normal": "assets/boy/lo/head_normal.jpg", "opacity_color": "assets/boy/lo/opacity_color.webp"}}};
 const FILES=await fetch('assets/manifest.json').then(r=>r.json());
-let bytesDone=0;const bytesTotal=FILES.total||1;
+let bytesDone=0;const touch0=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window||new URLSearchParams(location.hash.slice(1)).has('touch');let bytesTotal=0;for(const [pp,sz] of Object.entries(FILES.files)){if(pp.includes(touch0?'/hi/':'/lo/'))continue;bytesTotal+=sz}bytesTotal=bytesTotal||1;const TS=touch0?'texLo':'tex';
 const gid=id=>document.getElementById(id);
 function setProg(msg,force){const f=force!=null?force:Math.min(.88,bytesDone/bytesTotal*.88);gid('lbar').style.width=(f*100)+'%';gid('lp').textContent=Math.round(f*100)+'%';if(msg)gid('lm').textContent=msg}
 async function getBuf(url){const r=await fetch(url);if(!r.ok)throw new Error(url+' '+r.status);const rd=r.body.getReader(),chunks=[];let got=0;
@@ -83,13 +83,13 @@ const $=id=>document.getElementById(id);
 const HINT='W A S D: yurish · Shift: yugurish · Space: sakrash · G: raqs · H: quchoqlash · K: o\'pish · E: o\'tirish · L: chiroq · V: kamera · Esc: menyu';
 const cl=(x,a,b)=>Math.min(b,Math.max(a,x));
 const ease=x=>x*x*(3-2*x);
-const r=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});let pr=Math.min(devicePixelRatio,2);const prMax=pr;r.setPixelRatio(pr);const MAXA=Math.min(16,r.capabilities.getMaxAnisotropy());r.setSize(innerWidth,innerHeight);
-r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;r.toneMapping=THREE.ACESFilmicToneMapping;r.outputColorSpace=THREE.SRGBColorSpace;document.body.prepend(r.domElement);
+const r=new THREE.WebGLRenderer({antialias:!touch,powerPreference:'high-performance'});let pr=touch?Math.min(devicePixelRatio,1):Math.min(devicePixelRatio,2);const prMax=touch?Math.min(devicePixelRatio,1.25):pr,prMin=touch?.55:.85;r.setPixelRatio(pr);const MAXA=Math.min(16,r.capabilities.getMaxAnisotropy());r.setSize(innerWidth,innerHeight);
+r.shadowMap.enabled=true;r.shadowMap.type=touch?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;r.toneMapping=THREE.ACESFilmicToneMapping;r.outputColorSpace=THREE.SRGBColorSpace;document.body.prepend(r.domElement);
 const s=new THREE.Scene();const ENVM=[];
-{const pm=new THREE.PMREMGenerator(r);s.environment=pm.fromScene(new RoomEnvironment(),.04).texture;pm.dispose()}
+if(!touch){const pm=new THREE.PMREMGenerator(r);s.environment=pm.fromScene(new RoomEnvironment(),.04).texture;pm.dispose()}
 const cam=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.05,150);cam.position.set(0,1.75,-2.4);
 const oc=new OrbitControls(cam,r.domElement);oc.target.set(0,1.0,-5.5);oc.enableDamping=true;oc.maxPolarAngle=Math.PI*.52;oc.minDistance=.8;oc.maxDistance=8;
-const sun=new THREE.DirectionalLight(0xfff0e0,1);sun.position.set(2,12,3);sun.castShadow=true;sun.shadow.mapSize.set(touch?1536:2048,touch?1536:2048);sun.shadow.radius=3;sun.shadow.bias=-.0004;
+const sun=new THREE.DirectionalLight(0xfff0e0,1);sun.position.set(2,12,3);sun.castShadow=true;sun.shadow.mapSize.set(touch?1024:2048,touch?1024:2048);sun.shadow.radius=3;sun.shadow.bias=-.0004;
 Object.assign(sun.shadow.camera,{left:-9,right:9,top:9,bottom:-9,near:1,far:40});s.add(sun);s.add(sun.target);
 // ---------- KINOTEATR ZALI ----------
 const HW=7.4,ZF=-10.4,ZB=6.9,HH=8.6,SCR_Z=-9.7,ROWS=7,ROW_Z0=-2.6,ROW_D=1.15,STEP=.22;
@@ -133,7 +133,7 @@ for(const sg of [-1,1])box(.25,.12,ZB-ZF-.6,mCove,sg*(HW-.2),HH-.5,(ZB+ZF)/2);
 // devor lampalari + yorug'lik
 const sconces=[];
 for(const sg of [-1,1])for(let j=0;j<4;j++){const z=-7+j*4.4;box(.1,.5,.22,mSconce,sg*(HW-.08),3.0,z);
- if((j+(sg>0?1:0))%2===0){const l=new THREE.PointLight(0xffb070,0,10,1.6);l.position.set(sg*(HW-.7),3.0,z);l.userData.b=14;s.add(l);sconces.push(l)}}
+ if(!touch&&(j+(sg>0?1:0))%2===0){const l=new THREE.PointLight(0xffb070,0,10,1.6);l.position.set(sg*(HW-.7),3.0,z);l.userData.b=14;s.add(l);sconces.push(l)}}
 const hemi=new THREE.HemisphereLight(0xcfc6ff,0x2a1820,.9);s.add(hemi);
 // chiqish eshiklari va belgisi
 for(const sg of [-1,1]){box(1.5,2.6,.12,M({color:0x0d0b12,roughness:.7}),sg*5.4,rowH(ROWS-1)+1.3,ZB-.06);box(1.7,.12,.14,mGold,sg*5.4,rowH(ROWS-1)+2.65,ZB-.06);
@@ -161,14 +161,14 @@ box(2*HW,1.1,.5,mVelvet,0,8.0,SCR_Z+.5);box(2*HW,.08,.52,mGold,0,7.45,SCR_Z+.5);
  seats.forEach((st,i)=>{d.rotation.set(0,0,0);d.position.set(st.x,st.base+.39,st.z);d.updateMatrix();cu.setMatrixAt(i,d.matrix);
   d.position.set(st.x,st.base+.75,st.z+.3);d.rotation.set(.14,0,0);d.updateMatrix();bk.setMatrixAt(i,d.matrix)});
  let a=0;d.rotation.set(0,0,0);for(let i=0;i<ROWS;i++)for(const sg of [-1,1])for(let k=0;k<7;k++){d.position.set(sg*(1.04+k*.62),rowH(i)+.58,ROW_Z0+i*ROW_D+.02);d.updateMatrix();arms.setMatrixAt(a++,d.matrix)}
- cu.castShadow=bk.castShadow=true;s.add(cu,bk,arms)}
+ cu.castShadow=bk.castShadow=!touch;s.add(cu,bk,arms)}
 // proyektor derazasi va nur
 box(1.3,.6,.1,new THREE.MeshBasicMaterial({color:0xaec0ff}),0,6.5,ZB-.05);
 const beamL=Math.hypot(ZB-SCR_Z,6.5-SCY),beamG=new THREE.CylinderGeometry(.06,5.3,beamL,28,1,true);beamG.translate(0,-beamL/2,0);beamG.rotateX(-Math.PI/2);
 const beamMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,uniforms:{o:{value:.05}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec2 vUv;uniform float o;void main(){gl_FragColor=vec4(.68,.78,1.,o*pow(vUv.y,1.6));}'});
 {const b=new THREE.Mesh(beamG,beamMat);b.position.set(0,6.5,ZB-.2);b.lookAt(0,SCY,SCR_Z);b.scale.set(1,.56,1);s.add(b)}
 // ekran nuri
-const glow=[-1,1].map(sg=>{const l=new THREE.PointLight(0xffffff,0,28,1.2);l.position.set(sg*3.2,4.4,SCR_Z+2);s.add(l);return l});
+const glow=(touch?[0]:[-1,1]).map(sg=>{const l=new THREE.PointLight(0xffffff,0,28,1.2);l.position.set(sg*3.2,4.4,SCR_Z+2);s.add(l);return l});
 let dimT=0,dim=0,glowAvg=new THREE.Color(.5,.5,.6),glowT=0;
 const glowC=document.createElement('canvas');glowC.width=16;glowC.height=9;const glowG=glowC.getContext('2d',{willReadFrequently:true});
 function updateHall(dt,t){dim+=(dimT-dim)*(1-Math.exp(-2.5*dt));const lv=1-dim;
@@ -218,13 +218,13 @@ const tl=new THREE.TextureLoader(),fb=new FBXLoader();
 const tx=(u,srgb)=>{const t=TEX[u];if(srgb)t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=MAXA;return t};
 async function loadTex(url){const buf=await getBuf(url);const u=URL.createObjectURL(new Blob([buf]));TEX[url]=await new Promise((res,rej)=>tl.load(u,res,undefined,rej))}
 setProg('Teksturalar...');
-await Promise.all(Object.values(ASSET).flatMap(a=>Object.values(a.tex)).map(loadTex));
+await Promise.all(Object.values(ASSET).flatMap(a=>Object.values(a[TS])).map(loadTex));
 setProg('Animatsiyalar...');
 await pool(MAN.map(k=>()=>getJSON('assets/anim/'+k+'.json').then(j=>{ANIM[k]=j})),6);
 const chars={};let CH=[];
 async function build(p,label,x,z,ry,height,gp){setProg('Personaj: '+label+'...');const hairMats=[];const o=fb.parse(await fetchBuf(ASSET[p].fbx),'');
  o.traverse(c=>{if(!c.isMesh)return;c.castShadow=true;c.frustumCulled=false;
-  const f=m=>{const n=(m.name||'').toLowerCase(),T=ASSET[p].tex,k=n.includes('opacity')?'opacity':n.includes('head')?'head':'body';
+  const f=m=>{const n=(m.name||'').toLowerCase(),T=ASSET[p][TS],k=n.includes('opacity')?'opacity':n.includes('head')?'head':'body';
    const nm=new THREE.MeshStandardMaterial({map:tx(T[k+'_color'],true),roughness:.65,metalness:0});ENVM.push(nm);
    if(T[k+'_normal'])nm.normalMap=tx(T[k+'_normal'],false);
    if(k==='opacity'){nm.transparent=true;nm.alphaTest=.4;nm.side=THREE.DoubleSide;hairMats.push(nm)}return nm};
@@ -431,9 +431,12 @@ function updatePrompt(dt){const e=$('prompt');
  else if(nearestSeat(cur)){e.textContent=touch?'Yaqin o\'rindiq bor: \"O\'tir\"':'E: o\'tirish';e.style.display='block'}else e.style.display='none'}
 // ---------- asosiy sikl ----------
 const clock=new THREE.Clock(),eyeA=new THREE.Vector3(),eyeB=new THREE.Vector3();const qH=new THREE.Quaternion(),fwdV=new THREE.Vector3(),upV=new THREE.Vector3(),UPW=new THREE.Vector3(0,1,0);let jumpBuf=0,fov=50,tClock=0;
-let fpsT=0,fpsN=0;
+let fpsT=0,fpsN=0,minDt=0,lastT=0;
 function frame(dtO,skip){const dt=dtO||Math.min(clock.getDelta(),.05);
- if(!dtO&&!TP.has('t')){fpsT+=dt;fpsN++;if(fpsT>2){const avg=fpsT/fpsN;fpsT=fpsN=0;let np=pr;if(avg>1/28&&pr>.85)np=Math.max(.85,pr-.15);else if(avg<1/55&&pr<prMax)np=Math.min(prMax,pr+.1);if(np!==pr){pr=np;r.setPixelRatio(pr);r.setSize(innerWidth,innerHeight)}}}
+ if(!dtO&&!TP.has('t')){fpsT+=dt;fpsN++;if(fpsT>1){const avg=fpsT/fpsN;fpsT=fpsN=0;let np=pr;
+  if(avg>1/30){if(pr>prMin+.01)np=Math.max(prMin,pr-.15);else if(!minDt){minDt=1000/30}}
+  else if(avg<1/52&&pr<prMax)np=Math.min(prMax,pr+.05);
+  if(np!==pr){pr=np;r.setPixelRatio(pr);r.setSize(innerWidth,innerHeight)}}}
  jumpBuf=Math.max(0,jumpBuf-dt);if(wantJump){jumpBuf=.14;wantJump=false}
  tClock+=dt;updateHall(dt,tClock);for(const c of CH)restoreSnap(c);
  let ix=mv.x,iz=mv.z;if(keys.KeyW||keys.ArrowUp)iz+=1;if(keys.KeyS||keys.ArrowDown)iz-=1;if(keys.KeyD||keys.ArrowRight)ix+=1;if(keys.KeyA||keys.ArrowLeft)ix-=1;
@@ -504,8 +507,8 @@ function frame(dtO,skip){const dt=dtO||Math.min(clock.getDelta(),.05);
   a.Bip01_Head.getWorldQuaternion(qH);const AX=(x,y,z)=>F(new THREE.Vector3(x,y,z).applyQuaternion(qH));window.__dbg='X '+AX(1,0,0)+' Y '+AX(0,1,0)+' Z '+AX(0,0,1);
   e.textContent=['lipGap '+f.distanceTo(m).toFixed(3),'lipF '+F(f),'lipM '+F(m),'headF '+F(P(a.Bip01_Head)),'headM '+F(P(b.Bip01_Head)),'rootF '+F(chars.girl.root.position)+' rootM '+F(chars.boy.root.position),'ERR '+(window.__err||'-'),'DBG '+(window.__dbg||'-')].join(String.fromCharCode(10))}
  if(!skip)r.render(s,cam)}
-r.setAnimationLoop(()=>frame());dispatchEvent(new Event('resize'));
-window.__g={chars,pair,pairSnap,emoteStart,start,THREE};
+r.setAnimationLoop(tm=>{if(minDt&&tm-lastT<minDt-3)return;lastT=tm;frame()});dispatchEvent(new Event('resize'));
+window.__g={chars,pair,pairSnap,emoteStart,start,THREE};window.__info=()=>({calls:r.info.render.calls,tris:r.info.render.triangles,geo:r.info.memory.geometries,tex:r.info.memory.textures,lights:s.children.filter(o=>o.isLight).length,pr});
 // sinov rejimi (skrinshot uchun)
 if(TP.has('t')){const t=TP.get('t');start(TP.get('cur')||'girl');mode='test';
  if(t==='hug'||t==='kiss')pairSnap(t);else if(t==='sit'){const c=chars[TP.get('c')||'girl'],st=seats.find(q=>q.row===+(TP.get('row')||4)&&Math.abs(q.x-(+(TP.get('sx')||1.35)))<.01);sitSnap(c,st);if(TP.has('dim'))dimT=1;if(TP.has('c2')){const c2=chars[TP.get('c2')],st2=seats.find(q=>q.row===+(TP.get('row')||4)&&Math.abs(q.x-(+(TP.get('sx2')||1.97)))<.01);sitSnap(c2,st2)}}else if(t==='sitwalk'){const c=chars.girl;c.root.position.set(.4,0,-1.2);const st=seats.find(q=>q.row===3&&Math.abs(q.x-1.35)<.01);sitStart(c,st)}
