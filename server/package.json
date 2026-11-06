@@ -1,0 +1,9 @@
+{
+  "name": "lovesim-signal",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ixtiyoriy PeerJS signal serveri (WebRTC ulanishni boshlash uchun). Ma'lumot va video bu server orqali o'tmaydi.",
+  "scripts": { "start": "node index.js" },
+  "dependencies": { "peer": "^1.0.2" }
+}

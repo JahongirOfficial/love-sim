@@ -1,5 +1,5 @@
 // Oddiy kesh: assets/ ni bir marta yuklab, keyingi safar bir zumda beradi.
-const V = 'lovesim-6';
+const V = 'lovesim-8';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil((async () => {
   for (const k of await caches.keys()) if (k !== V) await caches.delete(k);

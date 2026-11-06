@@ -36,6 +36,9 @@ Vercel'da Root Directory = `web`. `main` ga push qilinsa sayt o'zi yangilanadi.
 - **Chat**: Enter (telefonda "Chat"). Oxirgi gap personaj boshi tepasida xayol pufagi bo'lib ko'rinadi. Kiss/quchoq taklifi ham chat orqali.
 - Telefon uchun yengil profil (1K teksturalar, kam yorug'lik, moslashuvchan aniqlik).
 
+## Ulanish muammosi bo'lsa
+Onlayn rejim ommaviy PeerJS signal serveridan foydalanadi. Ba'zi tarmoqlarda u ishlamasa, `server/` papkasidagi o'z signal serveringizni Render'ga qo'ying (README ichida yo'riqnoma) va saytni `#sig=<manzil>` bilan oching.
+
 ## Manbalar
 Personajlar va animatsiyalar: [Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox) (MIT).
 Litsenziya matni: `THIRD_PARTY_LICENSES/`. 3D dvigatel: [three.js](https://threejs.org) (MIT).
